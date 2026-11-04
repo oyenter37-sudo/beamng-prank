@@ -29,7 +29,7 @@ namespace BeamPrank
         readonly Dictionary<string, float> _hoverAnim = new Dictionary<string, float>();
         readonly List<Hit> _hits = new List<Hit>();
 
-        int _mapSel = 9;
+        int _mapSel = 8;
         int _vehSel = -1;
 
         float _mapsScroll, _mapsTarget;
@@ -79,8 +79,8 @@ namespace BeamPrank
         static readonly RectangleF BtnOptions = new RectangleF(972, 718, 230, 42);
         static readonly RectangleF BtnQuit = new RectangleF(1213, 719, 238, 50);
 
-        static readonly RectangleF MapsGrid = new RectangleF(6, 95, 1500, 940);
-        static readonly RectangleF MapsStart = new RectangleF(1120, 896, 385, 46);
+        static readonly RectangleF MapsGrid = new RectangleF(6, 111, 1500, 924);
+        static readonly RectangleF MapsStart = new RectangleF(1140, 984, 365, 46);
         static readonly RectangleF MapsBack = new RectangleF(0, 0, 130, 46);
         static readonly RectangleF MapsTitleBand = new RectangleF(0, 45, 1506, 50);
 
@@ -90,7 +90,7 @@ namespace BeamPrank
 
         const float MapCardW = 364, MapCardH = 210, MapPitchX = 378, MapPitchY = 210;
         // the game leaves a little extra air before the last row of the 4x4 grid
-        static readonly float[] MapRowY = { 0f, 210f, 420f, 662f };
+        static readonly float[] MapRowY = { 0f, 231f, 444f, 658f };
         const float VehCardW = 290, VehCardH = 183, VehPitchX = 294, VehPitchY = 188;
 
         // 4x4 slots, -1 = the empty cell the game leaves in its first row
@@ -456,7 +456,7 @@ namespace BeamPrank
                 g.DrawImage(Assets.Get(string.Format("cards/m{0:00}.jpg", art)), r);
 
                 bool sel = i == _mapSel;
-                if (sel) DrawSelectedLabel(g, r, 36f, string.Format("cards/m{0:00}l.png", art));
+                if (sel) DrawSelectedLabel(g, r, 48f, string.Format("cards/m{0:00}l.png", art));
                 Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("map:" + i), sel ? 0f : 0.85f);
                 _hits.Add(new Hit("map:" + i, r));
             }
