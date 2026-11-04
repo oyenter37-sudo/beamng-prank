@@ -24,6 +24,9 @@ namespace BeamPrank
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+                Application.ThreadException += delegate { Environment.Exit(0); };
+                AppDomain.CurrentDomain.UnhandledException += delegate { Environment.Exit(0); };
                 Application.Run(new AppForm());
             }
         }

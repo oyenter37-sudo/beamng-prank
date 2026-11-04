@@ -49,6 +49,20 @@ namespace BeamPrank
         float _scale = 1f;
         float _ox, _oy;
 
+        static readonly string UserName = BuildUserName();
+        Bitmap _patchMain, _patchMaps;
+
+        static string BuildUserName()
+        {
+            string n = "";
+            try { n = Environment.UserName; } catch { }
+            if (string.IsNullOrEmpty(n)) n = "Player";
+            n = n.Trim();
+            n = char.ToUpperInvariant(n[0]) + n.Substring(1);
+            if (n.Length > 16) n = n.Substring(0, 15) + "\u2026";
+            return n;
+        }
+
         // ------------------------------------------------------------- geometry
         const int W = 1920, H = 1080;
 
@@ -378,6 +392,8 @@ namespace BeamPrank
             DrawButtonHit(g, "credits", BtnCredits);
             DrawButtonHit(g, "options", BtnOptions);
             DrawButtonHit(g, "quit", BtnQuit);
+
+            DrawPlayerTag(g, "bg_main.jpg", new Rectangle(62, 1032, 156, 40), ref _patchMain, 67, 1052, 145);
         }
 
         void DrawButtonHit(Graphics g, string id, RectangleF r)
@@ -452,6 +468,8 @@ namespace BeamPrank
             _hits.Add(new Hit("maps_start", MapsStart));
 
             _hits.Add(new Hit("maps_back", MapsBack));
+
+            DrawPlayerTag(g, "bg_maps.jpg", new Rectangle(62, 1032, 156, 40), ref _patchMaps, 67, 1052, 145);
         }
 
         static void DrawLabelTint(Graphics g, RectangleF card, float labelH, int alpha)
@@ -519,6 +537,12 @@ namespace BeamPrank
             _hits.Add(new Hit("veh_start", VehStart));
 
             _hits.Add(new Hit("veh_back", VehBack));
+
+            // profile chip in the top right corner
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(48, 60, 74)))
+                g.FillRectangle(b, 1822, 17, 80, 26);
+            Draw.Text(g, FitName(g, Theme.NameTiny, UserName, 74), Theme.NameTiny, Color.White,
+                new RectangleF(1818, 17, 80, 26), Draw.RightMid);
         }
 
         void DrawVehCard(Graphics g, int id, float x, float y)
@@ -620,6 +644,52 @@ namespace BeamPrank
         }
 
         // ----------------------------------------------------------------- utils
+        /// <summary>Blurs a slice of the background so baked-in text can be replaced.</summary>
+        static Bitmap MakePatch(Bitmap src, Rectangle area)
+        {
+            int w = Math.Max(4, area.Width / 26);
+            int h = Math.Max(3, area.Height / 26);
+            Bitmap big = new Bitmap(area.Width, area.Height);
+            using (Bitmap small = new Bitmap(w, h))
+            {
+                using (Graphics sg = Graphics.FromImage(small))
+                {
+                    sg.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    sg.DrawImage(src, new Rectangle(0, 0, w, h), area, GraphicsUnit.Pixel);
+                }
+                using (Graphics g2 = Graphics.FromImage(big))
+                {
+                    g2.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g2.DrawImage(small, new Rectangle(0, 0, area.Width, area.Height));
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(200, 0, 0, 0)))
+                        g2.FillRectangle(b, 0, 0, area.Width, area.Height);
+                }
+            }
+            return big;
+        }
+
+        static string FitName(Graphics g, Font f, string s, float maxWidth)
+        {
+            if (g.MeasureString(s, f, 4000, StringFormat.GenericTypographic).Width <= maxWidth)
+                return s;
+            for (int len = s.Length - 1; len > 1; len--)
+            {
+                string t = s.Substring(0, len) + "\u2026";
+                if (g.MeasureString(t, f, 4000, StringFormat.GenericTypographic).Width <= maxWidth)
+                    return t;
+            }
+            return s.Substring(0, 1);
+        }
+
+        void DrawPlayerTag(Graphics g, string asset, Rectangle area, ref Bitmap cache, float textX, float centerY, float maxWidth)
+        {
+            if (cache == null) cache = MakePatch(Assets.Get(asset), area);
+            g.DrawImage(cache, area);
+            string n = FitName(g, Theme.Name, UserName, maxWidth);
+            Draw.Text(g, n, Theme.Name, Color.White,
+                new RectangleF(textX, centerY - 15, maxWidth + 10, 30), Draw.LeftMid);
+        }
+
         static float Clamp(float v, float a, float b)
         {
             return v < a ? a : (v > b ? b : v);
