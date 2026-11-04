@@ -29,7 +29,7 @@ namespace BeamPrank
         readonly Dictionary<string, float> _hoverAnim = new Dictionary<string, float>();
         readonly List<Hit> _hits = new List<Hit>();
 
-        int _mapSel = 8;
+        int _mapSel = 9;
         int _vehSel = -1;
 
         float _mapsScroll, _mapsTarget;
@@ -78,7 +78,11 @@ namespace BeamPrank
         const float MapCardW = 364, MapCardH = 210, MapPitchX = 378, MapPitchY = 210;
         const float VehCardW = 290, VehCardH = 232, VehPitchX = 294, VehPitchY = 236;
 
-        const int MapCount = 12;
+        // 4x4 slots, -1 = the empty cell the game leaves in its first row
+        static readonly int[] MapArt = { 0, 1, 2, -1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
+        const int MapSlots = 16;
+
+        const int VehSlots = 30;
         const int RecentCount = 5;
 
         // -------------------------------------------------------------- lifecycle
@@ -388,7 +392,7 @@ namespace BeamPrank
         // -------------------------------------------------------------- map grid
         static float MapsMaxScroll()
         {
-            float content = 3 * MapPitchY;
+            float content = 4 * MapPitchY;
             return Math.Max(0f, content - MapsGrid.Height);
         }
 
@@ -412,8 +416,11 @@ namespace BeamPrank
             Region old = g.Clip;
             g.SetClip(MapsGrid);
 
-            for (int i = 0; i < MapCount; i++)
+            for (int i = 0; i < MapSlots; i++)
             {
+                int art = MapArt[i];
+                if (art < 0) continue;
+
                 int col = i % 4, row = i / 4;
                 RectangleF r = new RectangleF(
                     MapsGrid.X + col * MapPitchX,
@@ -422,7 +429,7 @@ namespace BeamPrank
 
                 if (r.Bottom < MapsGrid.Y - 10 || r.Top > MapsGrid.Bottom + 10) continue;
 
-                g.DrawImage(Assets.Get(string.Format("cards/m{0:00}.jpg", i)), r);
+                g.DrawImage(Assets.Get(string.Format("cards/m{0:00}.jpg", art)), r);
 
                 bool sel = i == _mapSel;
                 if (sel) DrawLabelTint(g, r, 34, 200);
@@ -456,7 +463,7 @@ namespace BeamPrank
         // --------------------------------------------------------- vehicle grid
         static float VehContentHeight()
         {
-            int total = RecentCount + (MapCount - MapCount) + 25; // see BuildVehicleList
+            int total = VehSlots;
             int rows = (total + 4) / 5;
             return 40 + 236 + 40 + (rows - 1) * VehPitchY;
         }
@@ -494,7 +501,7 @@ namespace BeamPrank
             {
                 for (int c = 0; c < 5; c++)
                 {
-                    if (idx >= RecentCount + 25) break;
+                    if (idx >= VehSlots) break;
                     int card = idx % 15;
                     DrawVehCard(g, idx, VehGrid.X + 16 + c * VehPitchX, y + r * VehPitchY, card);
                     idx++;
