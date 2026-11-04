@@ -50,7 +50,6 @@ namespace BeamPrank
         float _ox, _oy;
 
         static readonly string UserName = BuildUserName();
-        Bitmap _patchMain, _patchMaps;
 
         static string BuildUserName()
         {
@@ -78,7 +77,7 @@ namespace BeamPrank
         static readonly RectangleF BtnRepo = new RectangleF(468, 718, 230, 42);
         static readonly RectangleF BtnCredits = new RectangleF(712, 718, 230, 42);
         static readonly RectangleF BtnOptions = new RectangleF(972, 718, 230, 42);
-        static readonly RectangleF BtnQuit = new RectangleF(1230, 718, 240, 42);
+        static readonly RectangleF BtnQuit = new RectangleF(1213, 719, 238, 50);
 
         static readonly RectangleF MapsGrid = new RectangleF(6, 95, 1500, 940);
         static readonly RectangleF MapsStart = new RectangleF(1120, 896, 385, 46);
@@ -400,7 +399,7 @@ namespace BeamPrank
             DrawButtonHit(g, "options", BtnOptions);
             DrawButtonHit(g, "quit", BtnQuit);
 
-            DrawPlayerTag(g, "bg_main.jpg", new Rectangle(62, 1032, 156, 40), ref _patchMain, 67, 1052, 145);
+            DrawUserName(g);
         }
 
         void DrawButtonHit(Graphics g, string id, RectangleF r)
@@ -476,7 +475,7 @@ namespace BeamPrank
 
             _hits.Add(new Hit("maps_back", MapsBack));
 
-            DrawPlayerTag(g, "bg_maps.jpg", new Rectangle(62, 1032, 156, 40), ref _patchMaps, 67, 1052, 145);
+            DrawUserName(g);
         }
 
         static void DrawLabelTint(Graphics g, RectangleF card, float labelH, int alpha)
@@ -544,12 +543,6 @@ namespace BeamPrank
             _hits.Add(new Hit("veh_start", VehStart));
 
             _hits.Add(new Hit("veh_back", VehBack));
-
-            // profile chip in the top right corner
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(48, 60, 74)))
-                g.FillRectangle(b, 1822, 17, 80, 26);
-            Draw.Text(g, FitName(g, Theme.NameTiny, UserName, 74), Theme.NameTiny, Color.White,
-                new RectangleF(1818, 17, 80, 26), Draw.RightMid);
         }
 
         void DrawVehCard(Graphics g, int id, float x, float y)
@@ -661,30 +654,6 @@ namespace BeamPrank
         internal void TestPage(string page) { _page = page; }
 
         // ----------------------------------------------------------------- utils
-        /// <summary>Blurs a slice of the background so baked-in text can be replaced.</summary>
-        static Bitmap MakePatch(Bitmap src, Rectangle area)
-        {
-            int w = Math.Max(4, area.Width / 26);
-            int h = Math.Max(3, area.Height / 26);
-            Bitmap big = new Bitmap(area.Width, area.Height);
-            using (Bitmap small = new Bitmap(w, h))
-            {
-                using (Graphics sg = Graphics.FromImage(small))
-                {
-                    sg.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    sg.DrawImage(src, new Rectangle(0, 0, w, h), area, GraphicsUnit.Pixel);
-                }
-                using (Graphics g2 = Graphics.FromImage(big))
-                {
-                    g2.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    g2.DrawImage(small, new Rectangle(0, 0, area.Width, area.Height));
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(200, 0, 0, 0)))
-                        g2.FillRectangle(b, 0, 0, area.Width, area.Height);
-                }
-            }
-            return big;
-        }
-
         static string FitName(Graphics g, Font f, string s, float maxWidth)
         {
             if (g.MeasureString(s, f, 4000, StringFormat.GenericTypographic).Width <= maxWidth)
@@ -698,13 +667,11 @@ namespace BeamPrank
             return s.Substring(0, 1);
         }
 
-        void DrawPlayerTag(Graphics g, string asset, Rectangle area, ref Bitmap cache, float textX, float centerY, float maxWidth)
+        void DrawUserName(Graphics g)
         {
-            if (cache == null) cache = MakePatch(Assets.Get(asset), area);
-            g.DrawImage(cache, area);
-            string n = FitName(g, Theme.Name, UserName, maxWidth);
-            Draw.Text(g, n, Theme.Name, Color.White,
-                new RectangleF(textX, centerY - 15, maxWidth + 10, 30), Draw.LeftMid);
+            string n = FitName(g, Theme.Name, UserName, 118);
+            Draw.TextShadow(g, n, Theme.Name, Color.White,
+                new RectangleF(70, 1027, 122, 30), Draw.LeftMid);
         }
 
         static float Clamp(float v, float a, float b)
