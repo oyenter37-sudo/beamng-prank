@@ -165,10 +165,13 @@ namespace BeamPrank
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Normal;
             BackColor = Color.Black;
-            DoubleBuffered = false;
+            // the frame is already rendered into a DIB; this second buffer keeps
+            // Windows from showing the black clear between paint and native blit
+            DoubleBuffered = true;
             KeyPreview = true;
             Icon = Assets.AppIcon;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.UserPaint | ControlStyles.Opaque, true);
 
             // the system pointer is replaced by the orange one drawn into the frame
             _blankCursor = LoadBlankCursor();
@@ -372,7 +375,9 @@ namespace BeamPrank
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            _mouse = ToVirtual(e.Location);
+            PointF pos = ToVirtual(e.Location);
+            if (pos != _mouse) _dirty = true;   // redraw the pointer even without hover animation
+            _mouse = pos;
             _mouseInside = true;
             if (_frozen) return;
             string id = HitTest(_mouse);
