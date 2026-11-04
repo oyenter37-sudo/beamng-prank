@@ -46,9 +46,11 @@ namespace BeamPrank
         readonly Timer _tick;
 
         // loading / crash
-        internal const float LoadFps = 20f;        // the extracted frames were captured at 20 fps
+        internal const float MinLoadLen = 20f;     // each launch picks a random loading time...
+        internal const float MaxLoadLen = 30f;     // ...between these two
         internal const float LoadHold = 1.2f;      // let the finished screen sit before the "crash"
-        internal const float LoadLen = Assets.FrameCount / LoadFps + LoadHold;
+        float _loadAnimLen = 24f;
+        readonly Random _rng = new Random();
         float _loadT;
         float _holdT;
         bool _frozen;
@@ -297,6 +299,7 @@ namespace BeamPrank
             _hoverId = "";
             if (_screen == Screen.Loading)
             {
+                _loadAnimLen = MinLoadLen + (float)_rng.NextDouble() * (MaxLoadLen - MinLoadLen);
                 _loadT = 0f;
                 _holdT = 0f;
                 _frozen = false;
@@ -309,7 +312,7 @@ namespace BeamPrank
         void UpdateLoading(float dt)
         {
             _loadT += dt;
-            if (_loadT > LoadLen)
+            if (_loadT > _loadAnimLen + LoadHold)
                 TriggerCrash(false);
         }
 
@@ -785,8 +788,9 @@ namespace BeamPrank
         {
             g.DrawImage(Assets.Get("bg_loading.jpg"), 0, 0, W, H);
 
-            int frame = (int)(_loadT * LoadFps);
-            if (frame > Assets.FrameCount - 1) frame = Assets.FrameCount - 1;
+            // stretch the 79 real frames across the whole (random) loading time
+            float p = Clamp(_loadT / _loadAnimLen, 0f, 1f);
+            int frame = (int)(p * (Assets.FrameCount - 1));
             g.DrawImage(Assets.Frame(frame), new RectangleF(25, 398, 700, 294));
 
             DrawLoadingCounters(g, _loadT);
@@ -795,8 +799,7 @@ namespace BeamPrank
         /// <summary>Live status lines under the baked loading text, so they actually tick.</summary>
         void DrawLoadingCounters(Graphics g, float t)
         {
-            float animLen = Assets.FrameCount / LoadFps;
-            float p = Clamp(t / animLen, 0f, 1f);
+            float p = Clamp(t / _loadAnimLen, 0f, 1f);
             int textures = (int)(1284 * p);
             int beams = (int)(388 * Math.Min(1f, p * 1.35f));
             int materials = (int)(2210 * p);
@@ -918,6 +921,7 @@ namespace BeamPrank
         internal void TestScreen(Screen s) { _screen = s; _fade = 0f; _fadeDir = 0; EnterScreen(); }
         internal void TestHover(string id) { _hoverId = id; if (id != "") _hoverAnim[id] = 1f; }
         internal void TestLoading(float t) { _loadT = t; }
+        internal void TestLoadAnim(float seconds) { _loadAnimLen = seconds; }
         internal void TestCursor(float x, float y) { _mouse = new PointF(x, y); _mouseInside = true; }
         internal void TestCursorHide() { _mouseInside = false; }
         internal void TestFade(float f) { _fade = Clamp(f, 0f, 1f); }

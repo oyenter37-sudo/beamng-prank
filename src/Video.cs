@@ -19,7 +19,8 @@ namespace BeamPrank
         const float FadeMain = 2.30f;
         const float FadeMaps = 4.90f;
         const float FadeVeh = 7.50f;
-        const float LoadLen = AppForm.LoadLen;
+        const float DemoLoad = 24.0f;                    // mid-range of the 20-30 s random load
+        const float LoadLen = DemoLoad + AppForm.LoadHold;
         const float CrashLen = 5.1f;
         const float CrashAt = FadeVeh + LoadLen;
         const float Duration = CrashAt + CrashLen;
@@ -115,6 +116,7 @@ namespace BeamPrank
                     break;
                 case Scene.Loading:
                     _app.TestScreen(AppForm.Screen.Loading);
+                    _app.TestLoadAnim(DemoLoad);
                     _app.TestCursorHide();
                     break;
             }
@@ -191,6 +193,7 @@ namespace BeamPrank
         // ----------------------------------------------------------------- crash
         void RenderCrash(float t)
         {
+            _app.TestLoadAnim(DemoLoad);
             _app.TestLoading(LoadLen);
             _app.TestCursorHide();
             _app.TestFade(0f);
