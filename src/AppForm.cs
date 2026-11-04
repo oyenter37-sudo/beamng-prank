@@ -29,7 +29,7 @@ namespace BeamPrank
         readonly Dictionary<string, float> _hoverAnim = new Dictionary<string, float>();
         readonly List<Hit> _hits = new List<Hit>();
 
-        int _mapSel = 8;
+        int _mapSel = 9;
         int _vehSel = -1;
 
         float _mapsScroll, _mapsTarget;
@@ -456,7 +456,17 @@ namespace BeamPrank
                 g.DrawImage(Assets.Get(string.Format("cards/m{0:00}.jpg", art)), r);
 
                 bool sel = i == _mapSel;
-                if (sel) DrawSelectedLabel(g, r, 48f, string.Format("cards/m{0:00}l.png", art));
+                if (sel)
+                {
+                    DrawSelectedLabel(g, r, 48f, string.Format("cards/m{0:00}l.png", art));
+                }
+                else
+                {
+                    // the label text is baked into the art, but one card's strip was
+                    // rebuilt without it, so the stored mask restores it everywhere
+                    g.DrawImage(Assets.Get(string.Format("cards/m{0:00}l.png", art)),
+                        new RectangleF(r.X, r.Bottom - 48f, r.Width, 48f));
+                }
                 Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("map:" + i), sel ? 0f : 0.85f);
                 _hits.Add(new Hit("map:" + i, r));
             }

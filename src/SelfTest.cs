@@ -37,7 +37,7 @@ namespace BeamPrank
                 Shot(f, "01-main-menu");
 
                 f.TestScreen(AppForm.Screen.Maps);
-                f.TestSelect(8, -1);
+                f.TestSelect(9, -1);
                 f.TestHover("map:6");
                 Shot(f, "02-map-select");
 
