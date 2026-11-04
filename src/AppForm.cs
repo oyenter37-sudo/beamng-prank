@@ -434,7 +434,7 @@ namespace BeamPrank
             }
 
             // wipe the baked grid, we draw our own copy so it can scroll
-            using (LinearGradientBrush b = new LinearGradientBrush(MapsGrid, Color.FromArgb(26, 28, 30), Color.FromArgb(14, 15, 16), 90f))
+            using (LinearGradientBrush b = new LinearGradientBrush(MapsGrid, Color.FromArgb(39, 43, 42), Color.FromArgb(33, 37, 36), 90f))
                 g.FillRectangle(b, MapsGrid);
 
             Region old = g.Clip;
@@ -503,7 +503,7 @@ namespace BeamPrank
         {
             g.DrawImage(Assets.Get("bg_vehicles.jpg"), 0, 0, W, H);
 
-            using (LinearGradientBrush b = new LinearGradientBrush(VehGrid, Color.FromArgb(20, 20, 22), Color.FromArgb(10, 10, 11), 90f))
+            using (LinearGradientBrush b = new LinearGradientBrush(VehGrid, Color.FromArgb(22, 26, 32), Color.FromArgb(16, 20, 26), 90f))
                 g.FillRectangle(b, VehGrid);
 
             Region old = g.Clip;
