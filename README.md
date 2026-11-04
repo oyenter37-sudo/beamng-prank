@@ -43,9 +43,9 @@
 |---|---|
 | ![](docs/shots/boot.jpg) | ![](docs/shots/installer.jpg) |
 
-| «Краш» | Настройки |
+| «Краш» — Windows 10/11 | «Краш» — Windows 7/8 |
 |---|---|
-| ![](docs/shots/crash.jpg) | ![](docs/shots/options.jpg) |
+| ![](docs/shots/crash.jpg) | ![](docs/shots/crash-classic.jpg) |
 
 ## Фичи
 
