@@ -167,8 +167,8 @@ namespace BeamPrank
             using (SolidBrush b = new SolidBrush(Color.FromArgb(60, 60, 60)))
                 g.DrawString(body, Theme.Dialog, b, new RectangleF(66, 74, _w - 100, 40));
 
-            _btn2 = new RectangleF(_w - 300, _h - 48, 178, 30);
-            _btn1 = new RectangleF(_w - 114, _h - 48, 94, 30);
+            _btn2 = new RectangleF(_w - 349, _h - 48, 205, 30);
+            _btn1 = new RectangleF(_w - 134, _h - 48, 120, 30);
             DrawButton(g, _btn1, "Close the program", _hotBtn, true);
             DrawButton(g, _btn2, "Wait for the program to respond", _hotBtn2, true);
         }
