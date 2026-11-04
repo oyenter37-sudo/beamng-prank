@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -57,6 +58,7 @@ namespace BeamPrank
         // the game draws its own orange pointer; the system cursor stays hidden
         PointF _mouse;
         bool _mouseInside;
+        readonly Cursor _blankCursor;
 
         Bitmap _buf;
         Graphics _bufG;
@@ -163,7 +165,10 @@ namespace BeamPrank
             KeyPreview = true;
             Icon = Assets.AppIcon;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
-            Cursor = Cursors.None;
+
+            // the system pointer is replaced by the orange one drawn into the frame
+            _blankCursor = LoadBlankCursor();
+            Cursor = _blankCursor;
 
             // a DIB section doubles as the GDI+ drawing surface and as the source
             // of a native blit; a plain Bitmap cannot be blitted by GDI, and
@@ -194,7 +199,21 @@ namespace BeamPrank
             // a maximized borderless window still leaves the taskbar visible;
             // the real game owns the whole screen
             Bounds = System.Windows.Forms.Screen.FromPoint(Cursor.Position).Bounds;
-            Cursor = Cursors.None;
+            Cursor = _blankCursor;
+        }
+
+        static Cursor LoadBlankCursor()
+        {
+            // a 1x1 fully transparent .cur, so only the cursor we draw is visible
+            byte[] cur =
+            {
+                0, 0, 2, 0, 1, 0, 1, 1, 0, 0, 1, 0, 32, 0, 48, 0, 0, 0, 22, 0, 0, 0,
+                40, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 32, 0, 0, 0, 0, 0, 4, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                255, 0, 0, 0
+            };
+            try { return new Cursor(new MemoryStream(cur)); }
+            catch { return Cursors.Default; }
         }
 
         // ------------------------------------------------------------------ loop
