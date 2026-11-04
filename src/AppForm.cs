@@ -530,7 +530,7 @@ namespace BeamPrank
                 for (int c = 0; c < 5; c++)
                 {
                     if (idx >= VehSlots) break;
-                    int card = idx % 15;
+                    int card = idx % 20;
                     DrawVehCard(g, idx, VehGrid.X + 16 + c * VehPitchX, y + r * VehPitchY, card);
                     idx++;
                 }
@@ -551,7 +551,7 @@ namespace BeamPrank
 
         void DrawVehCard(Graphics g, int id, float x, float y)
         {
-            DrawVehCard(g, id, x, y, id % 15);
+            DrawVehCard(g, id, x, y, id % 20);
         }
 
         void DrawVehCard(Graphics g, int id, float x, float y, int art)
