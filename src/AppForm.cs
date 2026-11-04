@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -22,6 +23,9 @@ namespace BeamPrank
         Screen _pending;
         float _fade;
         int _fadeDir;
+        readonly Stopwatch _clock = Stopwatch.StartNew();
+        float _lastTick;
+        bool _dirty = true;
 
         bool _quickStart;
         string _page = "";
@@ -128,37 +132,68 @@ namespace BeamPrank
         // ------------------------------------------------------------------ loop
         void OnTick(object sender, EventArgs e)
         {
-            float dt = 0.016f;
+            float now = (float)_clock.Elapsed.TotalSeconds;
+            float dt = now - _lastTick;
+            _lastTick = now;
+            if (dt > 0.1f) dt = 0.1f;
             _time += dt;
+
+            bool anim = false;
 
             foreach (string k in new List<string>(_hoverAnim.Keys))
             {
                 float target = (k == _hoverId) ? 1f : 0f;
                 float v = _hoverAnim[k];
-                v += (target - v) * 0.35f;
-                if (Math.Abs(target - v) < 0.02f) v = target;
+                if (v == target) continue;
+                v += (target - v) * Math.Min(1f, dt * 18f);
+                if (Math.Abs(target - v) < 0.01f) v = target;
                 _hoverAnim[k] = v;
+                anim = true;
             }
             if (_hoverId != "" && !_hoverAnim.ContainsKey(_hoverId))
+            {
                 _hoverAnim[_hoverId] = 0f;
+                anim = true;
+            }
 
-            _mapsScroll += (_mapsTarget - _mapsScroll) * 0.25f;
-            _vehScroll += (_vehTarget - _vehScroll) * 0.25f;
+            if (Math.Abs(_mapsTarget - _mapsScroll) > 0.3f)
+            {
+                _mapsScroll += (_mapsTarget - _mapsScroll) * Math.Min(1f, dt * 14f);
+                anim = true;
+            }
+            else if (_mapsScroll != _mapsTarget) { _mapsScroll = _mapsTarget; anim = true; }
+
+            if (Math.Abs(_vehTarget - _vehScroll) > 0.3f)
+            {
+                _vehScroll += (_vehTarget - _vehScroll) * Math.Min(1f, dt * 14f);
+                anim = true;
+            }
+            else if (_vehScroll != _vehTarget) { _vehScroll = _vehTarget; anim = true; }
 
             if (_fadeDir < 0)
             {
                 _fade += dt * 6f;
+                anim = true;
                 if (_fade >= 1f) { _fade = 1f; _screen = _pending; EnterScreen(); _fadeDir = 1; }
             }
             else if (_fadeDir > 0)
             {
-                _fade -= dt * 5f;
+                _fade -= dt * 6f;
+                anim = true;
                 if (_fade <= 0f) { _fade = 0f; _fadeDir = 0; }
             }
 
-            if (_screen == Screen.Loading && !_frozen) UpdateLoading(dt);
+            if (_screen == Screen.Loading && !_frozen)
+            {
+                UpdateLoading(dt);
+                anim = true;
+            }
 
-            Invalidate();
+            if (anim || _dirty)
+            {
+                _dirty = false;
+                Invalidate();
+            }
         }
 
         void Go(Screen s)
@@ -234,6 +269,7 @@ namespace BeamPrank
             {
                 _hoverId = id;
                 Cursor = IsClickable(id) ? Cursors.Hand : Cursors.Default;
+                _dirty = true;
             }
         }
 
@@ -241,6 +277,7 @@ namespace BeamPrank
         {
             base.OnMouseLeave(e);
             _hoverId = "";
+            _dirty = true;
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -260,6 +297,7 @@ namespace BeamPrank
                 _mapsTarget = Clamp(_mapsTarget + delta, 0, MapsMaxScroll());
             else if (_screen == Screen.Vehicles)
                 _vehTarget = Clamp(_vehTarget + delta, 0, VehMaxScroll());
+            _dirty = true;
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -275,6 +313,7 @@ namespace BeamPrank
             }
             if (e.KeyCode == Keys.Enter && _screen == Screen.Vehicles) { Go(Screen.Loading); return; }
             if (e.KeyCode == Keys.Enter && _screen == Screen.Maps) { Go(Screen.Vehicles); return; }
+            _dirty = true;
         }
 
         string HitTest(PointF p)
@@ -364,8 +403,8 @@ namespace BeamPrank
             RenderScene();
 
             Graphics gg = e.Graphics;
-            gg.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            gg.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            gg.InterpolationMode = InterpolationMode.Bilinear;
+            gg.PixelOffsetMode = PixelOffsetMode.Half;
             gg.Clear(Color.Black);
 
             Rectangle cb = ClientRectangle;

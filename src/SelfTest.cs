@@ -72,6 +72,10 @@ namespace BeamPrank
                 Shot(f, "09-main-more-hover");
             }
 
+            Perf("main menu", f => { f.TestScreen(AppForm.Screen.Main); f.TestHover("freeroam"); });
+            Perf("maps", f => { f.TestScreen(AppForm.Screen.Maps); f.TestHover("map:6"); });
+            Perf("vehicles", f => { f.TestScreen(AppForm.Screen.Vehicles); f.TestHover("veh:2"); });
+
             using (CrashForm c = new CrashForm())
             {
                 c.TestTime(4.0f);
@@ -85,6 +89,21 @@ namespace BeamPrank
             _log.Flush();
             _log.Dispose();
             return _fail == 0 ? 0 : 1;
+        }
+
+        static void Perf(string label, Action<AppForm> setup)
+        {
+            using (AppForm f = new AppForm())
+            {
+                setup(f);
+                f.RenderScene();                 // warm the asset cache
+                System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+                const int n = 30;
+                for (int i = 0; i < n; i++) f.RenderScene();
+                sw.Stop();
+                Out(string.Format("perf {0}: {1:0.0} ms/frame", label,
+                    sw.Elapsed.TotalMilliseconds / n));
+            }
         }
 
         static void Shot(AppForm f, string name)

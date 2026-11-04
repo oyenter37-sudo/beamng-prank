@@ -138,8 +138,11 @@ namespace BeamPrank
         public static void SetupQuality(Graphics g)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            // HighQualityBicubic makes GDI+ resample every blit, even 1:1 ones, and
+            // turns a simple hover into a slideshow on weak hardware.
+            g.InterpolationMode = InterpolationMode.Bilinear;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+            g.CompositingQuality = CompositingQuality.HighSpeed;
             g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
         }
     }
