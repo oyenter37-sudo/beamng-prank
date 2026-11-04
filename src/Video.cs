@@ -15,13 +15,14 @@ namespace BeamPrank
     {
         const int Fps = 30;
         const int OutW = 1280, OutH = 720;
-        const float Duration = 24.0f;
 
         const float FadeMain = 2.30f;
         const float FadeMaps = 4.90f;
         const float FadeVeh = 7.50f;
-        const float LoadLen = 10.35f;
-        const float CrashAt = 18.75f;
+        const float LoadLen = AppForm.LoadLen;
+        const float CrashLen = 5.1f;
+        const float CrashAt = FadeVeh + LoadLen;
+        const float Duration = CrashAt + CrashLen;
 
         enum Scene { None, Main, Maps, Vehicles, Loading, Crash }
 

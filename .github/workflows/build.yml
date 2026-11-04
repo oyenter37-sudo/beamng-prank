@@ -49,7 +49,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "video render failed with exit code $($p.ExitCode)" }
           $frames = (Get-ChildItem video\f_*.jpg).Count
           Write-Host "frames: $frames"
-          if ($frames -lt 700) { throw "only $frames frames rendered" }
+          if ($frames -lt 500) { throw "only $frames frames rendered" }
           if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
             choco install ffmpeg -y --no-progress
           }

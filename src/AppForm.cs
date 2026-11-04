@@ -46,7 +46,9 @@ namespace BeamPrank
         readonly Timer _tick;
 
         // loading / crash
-        const float BootLen = 5.2f;    // fake shader compile before the real loading frames
+        internal const float LoadFps = 20f;        // the extracted frames were captured at 20 fps
+        internal const float LoadHold = 1.2f;      // let the finished screen sit before the "crash"
+        internal const float LoadLen = Assets.FrameCount / LoadFps + LoadHold;
         float _loadT;
         float _holdT;
         bool _frozen;
@@ -307,8 +309,7 @@ namespace BeamPrank
         void UpdateLoading(float dt)
         {
             _loadT += dt;
-            float animLen = Assets.FrameCount / 20f;
-            if (_loadT > BootLen + animLen + 1.2f)
+            if (_loadT > LoadLen)
                 TriggerCrash(false);
         }
 
@@ -782,113 +783,19 @@ namespace BeamPrank
         // --------------------------------------------------------------- loading
         void DrawLoading(Graphics g)
         {
-            if (_loadT < BootLen)
-            {
-                DrawShaderBoot(g);
-                return;
-            }
-
             g.DrawImage(Assets.Get("bg_loading.jpg"), 0, 0, W, H);
 
-            float t = _loadT - BootLen;
-            int frame = (int)(t * 20f);
+            int frame = (int)(_loadT * LoadFps);
             if (frame > Assets.FrameCount - 1) frame = Assets.FrameCount - 1;
             g.DrawImage(Assets.Frame(frame), new RectangleF(25, 398, 700, 294));
 
-            DrawLoadingCounters(g, t);
+            DrawLoadingCounters(g, _loadT);
         }
-
-        /// <summary>The first seconds of a real launch: compiling shaders on a black screen.</summary>
-        void DrawShaderBoot(Graphics g)
-        {
-            using (LinearGradientBrush bg = new LinearGradientBrush(new Rectangle(0, 0, W, H),
-                Color.FromArgb(9, 10, 12), Color.FromArgb(22, 24, 28), 90f))
-                g.FillRectangle(bg, 0, 0, W, H);
-
-            float raw = Clamp(_loadT / (BootLen - 1.1f), 0f, 1f);
-            float p = raw * raw * (3f - 2f * raw);
-
-            Draw.Slash(g, new RectangleF(140, 148, 22, 58));
-            Draw.Text(g, "BeamNG.drive", Theme.PageTitle, Color.White,
-                new RectangleF(186, 144, 700, 66), Draw.LeftMid);
-
-            int dots = ((int)(_loadT * 3f)) % 4;
-            Draw.Text(g, "Compiling shaders" + new string('.', dots), Theme.Section,
-                Color.FromArgb(226, 229, 233), new RectangleF(140, 258, 800, 40), Draw.LeftMid);
-
-            int pct = (int)(p * 100f);
-            Draw.Text(g, pct + " %", Theme.Section, Theme.Orange,
-                new RectangleF(1140, 258, 180, 40), Draw.RightMid);
-
-            RectangleF track = new RectangleF(140, 310, 1180, 5);
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(44, 48, 54)))
-                g.FillRectangle(b, track);
-            using (SolidBrush b = new SolidBrush(Theme.Orange))
-                g.FillRectangle(b, track.X, track.Y, track.Width * p, track.Height);
-
-            int variants = 512;
-            int done = (int)(p * variants);
-            string detail = p >= 0.999f
-                ? variants + " / " + variants + " variants · " + variants + " cached · 0 failed"
-                : done + " / " + variants + " variants · 0 cached · 1 worker";
-            Draw.Text(g, detail, Theme.Load, Color.FromArgb(126, 132, 140),
-                new RectangleF(140, 330, 1180, 28), Draw.LeftMid);
-
-            // scrolling compiler log
-            int shown = 7;
-            int last = (int)(p * BootLog.Length);
-            if (last > BootLog.Length - 1) last = BootLog.Length - 1;
-            int first = Math.Max(0, last - shown + 1);
-            for (int i = first; i <= last && i < BootLog.Length; i++)
-            {
-                int row = i - first;
-                bool current = i == last;
-                Color c = current ? Color.FromArgb(206, 211, 217) : Color.FromArgb(112, 118, 126);
-                string stamp = string.Format("00:00:{0:00}.{1:000}", i / 3, (i * 137) % 1000);
-                Draw.Text(g, stamp, Theme.Mono, Color.FromArgb(74, 79, 86),
-                    new RectangleF(140, 406 + row * 30, 120, 26), Draw.LeftMid);
-                Draw.Text(g, BootLog[i], Theme.Mono, c,
-                    new RectangleF(264, 406 + row * 30, 1050, 26), Draw.LeftMid);
-            }
-
-            Draw.Text(g, "BeamNG.drive 0.36.4.0 (build 18294)", Theme.Load,
-                Color.FromArgb(92, 98, 106), new RectangleF(140, 992, 700, 24), Draw.LeftMid);
-            Draw.Text(g, "Direct3D 11 · 1920 x 1080 · 60 Hz", Theme.Load,
-                Color.FromArgb(92, 98, 106), new RectangleF(1180, 992, 600, 24), Draw.RightMid);
-        }
-
-        static readonly string[] BootLog =
-        {
-            "INFO   ShaderDB: loading shader cache",
-            "INFO   ShaderDB: cache empty, full rebuild",
-            "INFO   D3D11: creating device on adapter 0",
-            "INFO   D3D11: feature level 11_1 selected",
-            "INFO   RT: shadow map 4096 x 4096",
-            "shaderc: terrain_standard       [1/512]",
-            "shaderc: terrain_standard      [16/512]",
-            "shaderc: terrain_standard      [32/512]",
-            "shaderc: vegetation_leaf       [64/512]",
-            "shaderc: water_surface         [96/512]",
-            "shaderc: vehicle_paint        [128/512]",
-            "WARN   shaderc: variant 0x8f31 compile took 4211 ms",
-            "shaderc: vehicle_glass        [192/512]",
-            "shaderc: road_asphalt         [224/512]",
-            "shaderc: sky_atmosphere       [256/512]",
-            "shaderc: terrain_standard     [320/512]",
-            "shaderc: vegetation_leaf      [384/512]",
-            "shaderc: vehicle_paint        [448/512]",
-            "shaderc: postfx_bloom         [480/512]",
-            "shaderc: postfx_tonemap       [504/512]",
-            "shaderc: postfx_taa           [512/512]",
-            "INFO   ShaderDB: 512 variants compiled",
-            "INFO   ShaderDB: writing cache (41.2 MB)",
-            "INFO   Render: shaders ready, 0 failed"
-        };
 
         /// <summary>Live status lines under the baked loading text, so they actually tick.</summary>
         void DrawLoadingCounters(Graphics g, float t)
         {
-            float animLen = Assets.FrameCount / 20f;
+            float animLen = Assets.FrameCount / LoadFps;
             float p = Clamp(t / animLen, 0f, 1f);
             int textures = (int)(1284 * p);
             int beams = (int)(388 * Math.Min(1f, p * 1.35f));

@@ -54,15 +54,10 @@ namespace BeamPrank
                 Shot(f, "05-vehicle-scrolled");
 
                 f.TestScreen(AppForm.Screen.Loading);
-                foreach (float t in new float[] { 0.9f, 2.6f, 4.0f })
+                foreach (float t in new float[] { 0.6f, 1.6f, 2.7f, 3.8f, 4.7f })
                 {
                     f.TestLoading(t);
-                    Shot(f, string.Format("06-boot-{0:0.0}", t));
-                }
-                foreach (float t in new float[] { 6.4f, 7.6f, 8.9f })
-                {
-                    f.TestLoading(t);
-                    Shot(f, string.Format("07-loading-{0:0.0}", t));
+                    Shot(f, string.Format("06-loading-{0:0.0}", t));
                 }
 
                 f.TestScreen(AppForm.Screen.Page);
