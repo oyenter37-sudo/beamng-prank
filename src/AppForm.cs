@@ -91,7 +91,7 @@ namespace BeamPrank
         const float MapCardW = 364, MapCardH = 210, MapPitchX = 378, MapPitchY = 210;
         // the game leaves a little extra air before the last row of the 4x4 grid
         static readonly float[] MapRowY = { 0f, 210f, 420f, 662f };
-        const float VehCardW = 290, VehCardH = 232, VehPitchX = 294, VehPitchY = 236;
+        const float VehCardW = 290, VehCardH = 183, VehPitchX = 294, VehPitchY = 188;
 
         // 4x4 slots, -1 = the empty cell the game leaves in its first row
         static readonly int[] MapArt = { 0, 1, 2, -1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
@@ -456,7 +456,7 @@ namespace BeamPrank
                 g.DrawImage(Assets.Get(string.Format("cards/m{0:00}.jpg", art)), r);
 
                 bool sel = i == _mapSel;
-                if (sel) DrawLabelTint(g, r, 34, 200);
+                if (sel) DrawSelectedLabel(g, r, 36f, string.Format("cards/m{0:00}l.png", art));
                 Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("map:" + i), sel ? 0f : 0.85f);
                 _hits.Add(new Hit("map:" + i, r));
             }
@@ -480,18 +480,20 @@ namespace BeamPrank
             DrawUserName(g, 1058f);
         }
 
-        static void DrawLabelTint(Graphics g, RectangleF card, float labelH, int alpha)
+        static readonly Color LabelOrange = Color.FromArgb(230, 120, 52);
+
+        static void DrawSelectedLabel(Graphics g, RectangleF card, float labelH, string maskPath)
         {
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, 242, 107, 15)))
-                g.FillRectangle(b, card.X, card.Bottom - labelH, card.Width, labelH);
+            RectangleF band = new RectangleF(card.X, card.Bottom - labelH, card.Width, labelH);
+            using (SolidBrush b = new SolidBrush(LabelOrange))
+                g.FillRectangle(b, band);
+            g.DrawImage(Assets.Get(maskPath), band);
         }
 
         // --------------------------------------------------------- vehicle grid
         static float VehContentHeight()
         {
-            int total = VehSlots;
-            int rows = (total + 4) / 5;
-            return 40 + 236 + 40 + (rows - 1) * VehPitchY;
+            return 40 + VehCardH + 40 + 4 * VehPitchY + VehCardH;
         }
 
         static float VehMaxScroll()
@@ -560,7 +562,7 @@ namespace BeamPrank
             g.DrawImage(Assets.Get(string.Format("cards/v{0:00}.jpg", art)), r);
 
             bool sel = id == _vehSel;
-            if (sel) DrawLabelTint(g, r, 40, 200);
+            if (sel) DrawSelectedLabel(g, r, 32f, string.Format("cards/v{0:00}l.png", art));
             Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("veh:" + id), sel ? 0f : 0.85f);
             _hits.Add(new Hit("veh:" + id, r));
         }
