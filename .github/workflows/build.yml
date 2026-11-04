@@ -17,6 +17,22 @@ jobs:
       - name: Build
         run: msbuild src\BeamPrank.csproj /restore /p:Configuration=Release /p:Platform=AnyCPU /v:minimal
 
+      - name: Render screens (self-test)
+        shell: pwsh
+        run: |
+          $exe = "src\bin\Release\BeamNG.drive.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList '--selftest','shots' -Wait -PassThru -NoNewWindow
+          Write-Host "self-test exit code: $($p.ExitCode)"
+          if (Test-Path shots\_report.txt) { Get-Content shots\_report.txt }
+          if ($p.ExitCode -ne 0) { throw "self-test failed with exit code $($p.ExitCode)" }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: render-shots
+          path: shots/
+          if-no-files-found: warn
+
       - name: Package
         shell: pwsh
         run: |

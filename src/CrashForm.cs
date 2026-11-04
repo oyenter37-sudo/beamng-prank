@@ -45,7 +45,21 @@ namespace BeamPrank
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            Graphics g = e.Graphics;
+            DrawContent(e.Graphics);
+        }
+
+        internal void TestTime(float t) { _t = t; }
+
+        internal Bitmap Shot()
+        {
+            Bitmap b = new Bitmap(CW, CH);
+            using (Graphics g = Graphics.FromImage(b))
+                DrawContent(g);
+            return b;
+        }
+
+        internal void DrawContent(Graphics g)
+        {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 

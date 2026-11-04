@@ -16,7 +16,7 @@ namespace BeamPrank
     public class AppForm : Form
     {
         // ---------------------------------------------------------------- state
-        enum Screen { Main, Maps, Vehicles, Loading, Page }
+        public enum Screen { Main, Maps, Vehicles, Loading, Page }
 
         Screen _screen = Screen.Main;
         Screen _pending;
@@ -325,7 +325,8 @@ namespace BeamPrank
         // ---------------------------------------------------------------- render
         protected override void OnPaintBackground(PaintEventArgs e) { }
 
-        protected override void OnPaint(PaintEventArgs e)
+        /// <summary>Draws the whole frame into the offscreen buffer.</summary>
+        internal void RenderScene()
         {
             using (Graphics g = Graphics.FromImage(_buf))
             {
@@ -354,6 +355,12 @@ namespace BeamPrank
                         g.FillRectangle(b, 0, 0, W, H);
                 }
             }
+
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            RenderScene();
 
             Graphics gg = e.Graphics;
             gg.InterpolationMode = InterpolationMode.HighQualityBicubic;
@@ -642,6 +649,16 @@ namespace BeamPrank
             Draw.Text(g, "Back", Theme.Button, Color.White, back, Draw.CenterMid);
             _hits.Add(new Hit("page_back", back));
         }
+
+        // ------------------------------------------------------------ test hooks
+        internal Bitmap Buffer { get { return _buf; } }
+        internal void TestScreen(Screen s) { _screen = s; _fade = 0f; _fadeDir = 0; EnterScreen(); }
+        internal void TestHover(string id) { _hoverId = id; if (id != "") _hoverAnim[id] = 1f; }
+        internal void TestLoading(float t) { _loadT = t; }
+        internal void TestMapScroll(float v) { _mapsScroll = _mapsTarget = v; }
+        internal void TestVehScroll(float v) { _vehScroll = _vehTarget = v; }
+        internal void TestSelect(int map, int veh) { _mapSel = map; _vehSel = veh; }
+        internal void TestPage(string page) { _page = page; }
 
         // ----------------------------------------------------------------- utils
         /// <summary>Blurs a slice of the background so baked-in text can be replaced.</summary>
