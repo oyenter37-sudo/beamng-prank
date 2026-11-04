@@ -3,3 +3,5 @@ obj/
 *.user
 *.zip
 dist/
+video/
+*.mp4

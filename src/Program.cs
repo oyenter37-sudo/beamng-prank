@@ -43,6 +43,16 @@ namespace BeamPrank
                     return;
                 }
 
+                // CI hook: render a scripted demo of the whole prank to JPEG frames.
+                if (args != null && args.Length > 0 &&
+                    string.Equals(args[0], "--video", StringComparison.OrdinalIgnoreCase))
+                {
+                    string dir = args.Length > 1 ? args[1] : "video";
+                    RunState.CurrentRun = 1;
+                    Environment.ExitCode = Video.Run(dir);
+                    return;
+                }
+
                 // every launch is counted; later launches occasionally fail even before the menu
                 RunState.CurrentRun = RunState.NextRun();
                 if (RunState.ShouldFailStartup(RunState.CurrentRun))

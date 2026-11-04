@@ -80,6 +80,7 @@ namespace BeamPrank
         }
 
         internal void TestTime(float t) { _t = t; }
+        internal void TestHoverPrimary(bool hot) { _hotBtn = hot; }
 
         internal Bitmap Shot()
         {

@@ -1012,6 +1012,14 @@ namespace BeamPrank
         internal void TestHover(string id) { _hoverId = id; if (id != "") _hoverAnim[id] = 1f; }
         internal void TestLoading(float t) { _loadT = t; }
         internal void TestCursor(float x, float y) { _mouse = new PointF(x, y); _mouseInside = true; }
+        internal void TestCursorHide() { _mouseInside = false; }
+        internal void TestFade(float f) { _fade = Clamp(f, 0f, 1f); }
+        internal void TestHoverLevel(string id, float v)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            _hoverId = v > 0.01f ? id : "";
+            _hoverAnim[id] = Clamp(v, 0f, 1f);
+        }
         internal void TestMapScroll(float v) { _mapsScroll = _mapsTarget = v; }
         internal void TestVehScroll(float v) { _vehScroll = _vehTarget = v; }
         internal void TestSelect(int map, int veh) { _mapSel = map; _vehSel = veh; }

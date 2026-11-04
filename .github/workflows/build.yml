@@ -41,6 +41,23 @@ jobs:
             if ((Get-Item $f).Length -lt 8000) { throw "$f is suspiciously small" }
           }
 
+      - name: Render demo video
+        shell: pwsh
+        run: |
+          $exe = "src\bin\Release\BeamNG.drive.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList '--video','video' -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "video render failed with exit code $($p.ExitCode)" }
+          $frames = (Get-ChildItem video\f_*.jpg).Count
+          Write-Host "frames: $frames"
+          if ($frames -lt 700) { throw "only $frames frames rendered" }
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+            choco install ffmpeg -y --no-progress
+          }
+          ffmpeg -y -framerate 30 -i video\f_%05d.jpg -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -movflags +faststart beamng-prank-demo.mp4
+          if (-not (Test-Path beamng-prank-demo.mp4)) { throw "video was not produced" }
+          $mb = [math]::Round((Get-Item beamng-prank-demo.mp4).Length / 1MB, 1)
+          Write-Host "video: $mb MB"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -58,6 +75,13 @@ jobs:
           Copy-Item src\Installer\bin\Release\BeamNG.drive_Setup.exe dist\
           Get-ChildItem dist | Select-Object Name,Length
           Compress-Archive -Path dist\* -DestinationPath BeamNG-drive-win.zip -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-video
+          path: beamng-prank-demo.mp4
+          retention-days: 30
+          if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
         with:
