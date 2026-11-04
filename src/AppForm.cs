@@ -185,7 +185,7 @@ namespace BeamPrank
             base.OnShown(e);
             // a maximized borderless window still leaves the taskbar visible;
             // the real game owns the whole screen
-            Bounds = Screen.FromPoint(Cursor.Position).Bounds;
+            Bounds = System.Windows.Forms.Screen.FromPoint(Cursor.Position).Bounds;
             Cursor = Cursors.Default;
         }
 
