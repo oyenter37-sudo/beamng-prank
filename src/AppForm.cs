@@ -89,6 +89,8 @@ namespace BeamPrank
         static readonly RectangleF VehBack = new RectangleF(0, 0, 130, 46);
 
         const float MapCardW = 364, MapCardH = 210, MapPitchX = 378, MapPitchY = 210;
+        // the game leaves a little extra air before the last row of the 4x4 grid
+        static readonly float[] MapRowY = { 0f, 210f, 420f, 662f };
         const float VehCardW = 290, VehCardH = 232, VehPitchX = 294, VehPitchY = 236;
 
         // 4x4 slots, -1 = the empty cell the game leaves in its first row
@@ -414,7 +416,7 @@ namespace BeamPrank
         // -------------------------------------------------------------- map grid
         static float MapsMaxScroll()
         {
-            float content = 4 * MapPitchY;
+            float content = MapRowY[3] + MapCardH;
             return Math.Max(0f, content - MapsGrid.Height);
         }
 
@@ -446,7 +448,7 @@ namespace BeamPrank
                 int col = i % 4, row = i / 4;
                 RectangleF r = new RectangleF(
                     MapsGrid.X + col * MapPitchX,
-                    MapsGrid.Y + row * MapPitchY - _mapsScroll,
+                    MapsGrid.Y + MapRowY[row] - _mapsScroll,
                     MapCardW, MapCardH);
 
                 if (r.Bottom < MapsGrid.Y - 10 || r.Top > MapsGrid.Bottom + 10) continue;
