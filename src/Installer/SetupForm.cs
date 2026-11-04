@@ -77,7 +77,7 @@ namespace BeamSetup
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Programs", "BeamNG.drive");
 
-            Text = "BeamNG.drive Setup";
+            base.Text = "BeamNG.drive Setup";
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(CW, CH);
@@ -485,7 +485,7 @@ namespace BeamSetup
         }
 
         // ------------------------------------------------------------------ parts
-        static void Text(Graphics g, string s, Font f, Color c, RectangleF r, bool right)
+        static void Txt(Graphics g, string s, Font f, Color c, RectangleF r, bool right)
         {
             using (SolidBrush b = new SolidBrush(c))
             {
