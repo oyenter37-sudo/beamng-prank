@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace BeamPrank
@@ -50,6 +51,18 @@ namespace BeamPrank
         bool _instantCrash;
 
         Bitmap _buf;
+        Graphics _bufG;
+
+        [DllImport("gdi32.dll")]
+        static extern bool BitBlt(IntPtr d, int x, int y, int w, int h,
+            IntPtr s, int sx, int sy, int rop);
+        [DllImport("gdi32.dll")]
+        static extern bool StretchBlt(IntPtr d, int x, int y, int w, int h,
+            IntPtr s, int sx, int sy, int sw, int sh, int rop);
+        [DllImport("gdi32.dll")]
+        static extern int SetStretchBltMode(IntPtr hdc, int mode);
+        const int SRCCOPY = 0x00CC0020;
+        const int HALFTONE = 4;
         float _scale = 1f;
         float _ox, _oy;
 
@@ -111,12 +124,13 @@ namespace BeamPrank
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Maximized;
             BackColor = Color.Black;
-            DoubleBuffered = true;
+            DoubleBuffered = false;
             KeyPreview = true;
             Icon = Assets.AppIcon;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
 
             _buf = new Bitmap(W, H);
+            _bufG = Graphics.FromImage(_buf);
             _tick = new Timer();
             _tick.Interval = 16;
             _tick.Tick += OnTick;
@@ -368,7 +382,9 @@ namespace BeamPrank
         /// <summary>Draws the whole frame into the offscreen buffer.</summary>
         internal void RenderScene()
         {
-            using (Graphics g = Graphics.FromImage(_buf))
+            Graphics g = _bufG;
+            g.ResetClip();
+            g.ResetTransform();
             {
                 Draw.SetupQuality(g);
                 g.Clear(Color.Black);
@@ -403,16 +419,53 @@ namespace BeamPrank
             RenderScene();
 
             Graphics gg = e.Graphics;
-            gg.InterpolationMode = InterpolationMode.Bilinear;
-            gg.PixelOffsetMode = PixelOffsetMode.Half;
-            gg.Clear(Color.Black);
-
             Rectangle cb = ClientRectangle;
             _scale = Math.Min((float)cb.Width / W, (float)cb.Height / H);
             float dw = W * _scale, dh = H * _scale;
             _ox = (cb.Width - dw) / 2f;
             _oy = (cb.Height - dh) / 2f;
-            gg.DrawImage(_buf, new RectangleF(_ox, _oy, dw, dh));
+
+            gg.Clear(Color.Black);
+
+            // blit the frame with GDI instead of GDI+: DrawImage rescales every
+            // pixel in managed code and is the reason transitions felt laggy
+            int bx = (int)Math.Round(_ox), by = (int)Math.Round(_oy);
+            int bw = (int)Math.Round(dw), bh = (int)Math.Round(dh);
+            if (!Present(gg, bx, by, bw, bh))
+            {
+                gg.InterpolationMode = InterpolationMode.Bilinear;
+                gg.PixelOffsetMode = PixelOffsetMode.Half;
+                gg.DrawImage(_buf, new RectangleF(_ox, _oy, dw, dh));
+            }
+        }
+
+        bool Present(Graphics dstG, int x, int y, int w, int h)
+        {
+            IntPtr dst = dstG.GetHdc();
+            IntPtr src = _bufG.GetHdc();
+            try
+            {
+                if (w == W && h == H)
+                    return BitBlt(dst, x, y, w, h, src, 0, 0, SRCCOPY);
+                SetStretchBltMode(dst, HALFTONE);
+                return StretchBlt(dst, x, y, w, h, src, 0, 0, W, H, SRCCOPY);
+            }
+            finally
+            {
+                _bufG.ReleaseHdc(src);
+                dstG.ReleaseHdc(dst);
+            }
+        }
+
+        internal bool TestPresent(Bitmap dest)
+        {
+            RenderScene();
+            using (Graphics dg = Graphics.FromImage(dest))
+            {
+                bool ok = Present(dg, 0, 0, dest.Width, dest.Height);
+                if (!ok) return false;
+            }
+            return true;
         }
 
         float Hover(string id)
@@ -746,6 +799,7 @@ namespace BeamPrank
             {
                 _tick.Stop();
                 _tick.Dispose();
+                if (_bufG != null) _bufG.Dispose();
                 if (_buf != null) _buf.Dispose();
             }
             base.Dispose(disposing);
