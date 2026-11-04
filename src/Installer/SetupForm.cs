@@ -323,10 +323,10 @@ namespace BeamSetup
                 g.FillRectangle(b, 0, 0, CW, 96);
 
             Slash(g, new RectangleF(40, 30, 14, 38));
-            Text(g, "BeamNG.drive", FHeader, Color.White, new RectangleF(66, 24, 400, 44), false);
-            Text(g, "Setup", FSub, Color.FromArgb(140, 146, 155),
+            Txt(g, "BeamNG.drive", FHeader, Color.White, new RectangleF(66, 24, 400, 44), false);
+            Txt(g, "Setup", FSub, Color.FromArgb(140, 146, 155),
                 new RectangleF(68, 64, 200, 24), false);
-            Text(g, Version, FSmall, Color.FromArgb(120, 126, 135),
+            Txt(g, Version, FSmall, Color.FromArgb(120, 126, 135),
                 new RectangleF(CW - 232, 34, 150, 24), true);
 
             using (SolidBrush b = new SolidBrush(Color.FromArgb(242, 107, 15)))
@@ -356,25 +356,25 @@ namespace BeamSetup
 
         void DrawWelcome(Graphics g)
         {
-            Text(g, "Welcome to the BeamNG.drive Setup Wizard", FTitle, Color.White,
+            Txt(g, "Welcome to the BeamNG.drive Setup Wizard", FTitle, Color.White,
                 new RectangleF(40, 126, 560, 30), false);
-            Text(g, "This wizard will install BeamNG.drive " + Version + " on your computer.\r\n" +
+            Txt(g, "This wizard will install BeamNG.drive " + Version + " on your computer.\r\n" +
                     "Click Install to continue, or Cancel to exit Setup.",
                 FBody, Color.FromArgb(178, 184, 192), new RectangleF(40, 168, 560, 54), false);
 
-            Text(g, "Destination folder", FBold, Color.FromArgb(216, 221, 227),
+            Txt(g, "Destination folder", FBold, Color.FromArgb(216, 221, 227),
                 new RectangleF(40, 232, 400, 24), false);
 
             using (SolidBrush b = new SolidBrush(Color.FromArgb(9, 11, 14)))
                 g.FillRectangle(b, PathRect);
             using (Pen p = new Pen(Color.FromArgb(62, 68, 78), 1f))
                 g.DrawRectangle(p, PathRect.X, PathRect.Y, PathRect.Width - 1, PathRect.Height - 1);
-            Text(g, _dir, FSmall, Color.FromArgb(170, 177, 186),
+            Txt(g, _dir, FSmall, Color.FromArgb(170, 177, 186),
                 new RectangleF(PathRect.X + 10, PathRect.Y, PathRect.Width - 20, PathRect.Height), false);
 
             Button(g, BrowseRect, "Browse...", false, _hotBrowse);
 
-            Text(g, "Installs for the current user only - no administrator rights required.",
+            Txt(g, "Installs for the current user only - no administrator rights required.",
                 FSmall, Color.FromArgb(118, 125, 134), new RectangleF(40, 304, 560, 22), false);
 
             Check(g, Check1, _desktop, "Create a desktop shortcut", _hotCheck1);
@@ -383,16 +383,16 @@ namespace BeamSetup
             Button(g, BtnPrimary, "Install", true, _hotPrimary);
             Button(g, BtnSecondary, "Cancel", false, _hotSecondary);
 
-            Text(g, "BeamNG.drive " + Version + "  ·  © 2012-2026 BeamNG GmbH",
+            Txt(g, "BeamNG.drive " + Version + "  ·  © 2012-2026 BeamNG GmbH",
                 FTiny, Color.FromArgb(92, 98, 106), new RectangleF(40, CH - 18, 340, 16), false);
         }
 
         void DrawWorking(Graphics g)
         {
             string title = _uninstall ? "Uninstalling BeamNG.drive" : "Installing BeamNG.drive";
-            Text(g, title, FTitle, Color.White, new RectangleF(40, 126, 560, 30), false);
+            Txt(g, title, FTitle, Color.White, new RectangleF(40, 126, 560, 30), false);
 
-            Text(g, "Installing to " + _dir, FSmall, Color.FromArgb(140, 147, 156),
+            Txt(g, "Installing to " + _dir, FSmall, Color.FromArgb(140, 147, 156),
                 new RectangleF(40, 164, 560, 22), false);
 
             RectangleF track = new RectangleF(40, 208, 560, 8);
@@ -401,12 +401,12 @@ namespace BeamSetup
             using (SolidBrush b = new SolidBrush(Color.FromArgb(242, 107, 15)))
                 g.FillRectangle(b, track.X, track.Y, track.Width * Math.Min(1f, _progress), track.Height);
 
-            Text(g, (int)(_progress * 100f) + " %", FSmall, Color.FromArgb(210, 215, 222),
+            Txt(g, (int)(_progress * 100f) + " %", FSmall, Color.FromArgb(210, 215, 222),
                 new RectangleF(520, 224, 80, 22), true);
 
             if (_uninstall)
             {
-                Text(g, _status, FBody, Color.FromArgb(200, 206, 213),
+                Txt(g, _status, FBody, Color.FromArgb(200, 206, 213),
                     new RectangleF(40, 250, 560, 24), false);
             }
             else
@@ -435,52 +435,52 @@ namespace BeamSetup
 
                     Color c = done ? Color.FromArgb(170, 176, 184)
                         : current ? Color.White : Color.FromArgb(110, 117, 126);
-                    Text(g, Steps[i], FBody, c, new RectangleF(72, y - 4, 500, 28), false);
+                    Txt(g, Steps[i], FBody, c, new RectangleF(72, y - 4, 500, 28), false);
                 }
             }
 
-            Text(g, _uninstall ? "Removing files, shortcuts and registry entries."
+            Txt(g, _uninstall ? "Removing files, shortcuts and registry entries."
                               : "This may take a few minutes. Do not close the window.",
                 FSmall, Color.FromArgb(112, 119, 128), new RectangleF(40, 380, 560, 22), false);
 
             Button(g, BtnSecondary, "Cancel", false, _hotSecondary);
 
-            Text(g, "BeamNG.drive " + Version + "  ·  © 2012-2026 BeamNG GmbH",
+            Txt(g, "BeamNG.drive " + Version + "  ·  © 2012-2026 BeamNG GmbH",
                 FTiny, Color.FromArgb(92, 98, 106), new RectangleF(40, CH - 18, 340, 16), false);
         }
 
         void DrawDone(Graphics g, bool uninstall)
         {
-            Text(g, uninstall ? "BeamNG.drive has been removed"
+            Txt(g, uninstall ? "BeamNG.drive has been removed"
                              : "Completing the BeamNG.drive Setup Wizard",
                 FTitle, Color.White, new RectangleF(40, 126, 560, 30), false);
 
-            Text(g, uninstall
+            Txt(g, uninstall
                     ? "BeamNG.drive has been removed from your computer."
                     : "BeamNG.drive " + Version + " has been installed on your computer.",
                 FBody, Color.FromArgb(178, 184, 192), new RectangleF(40, 168, 560, 28), false);
 
             if (!uninstall)
             {
-                Text(g, "Installed to", FBold, Color.FromArgb(216, 221, 227),
+                Txt(g, "Installed to", FBold, Color.FromArgb(216, 221, 227),
                     new RectangleF(40, 216, 300, 24), false);
 
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(9, 11, 14)))
                     g.FillRectangle(b, PathRect);
                 using (Pen p = new Pen(Color.FromArgb(62, 68, 78), 1f))
                     g.DrawRectangle(p, PathRect.X, PathRect.Y, PathRect.Width - 1, PathRect.Height - 1);
-                Text(g, _dir, FSmall, Color.FromArgb(170, 177, 186),
+                Txt(g, _dir, FSmall, Color.FromArgb(170, 177, 186),
                     new RectangleF(PathRect.X + 10, PathRect.Y, PathRect.Width - 20, PathRect.Height), false);
 
                 Check(g, Check2, _launch, "Launch BeamNG.drive", _hotCheck2);
             }
 
-            Text(g, "Click Finish to exit Setup.", FSmall, Color.FromArgb(118, 125, 134),
+            Txt(g, "Click Finish to exit Setup.", FSmall, Color.FromArgb(118, 125, 134),
                 new RectangleF(40, 330, 560, 22), false);
 
             Button(g, BtnPrimary, "Finish", true, _hotPrimary);
 
-            Text(g, "BeamNG.drive " + Version + "  ·  © 2012-2026 BeamNG GmbH",
+            Txt(g, "BeamNG.drive " + Version + "  ·  © 2012-2026 BeamNG GmbH",
                 FTiny, Color.FromArgb(92, 98, 106), new RectangleF(40, CH - 18, 340, 16), false);
         }
 
@@ -577,7 +577,7 @@ namespace BeamSetup
                     g.DrawLine(p, box.X + 8.5f, box.Y + 15, box.Right - 4, box.Y + 5);
                 }
             }
-            Text(g, label, FBody, Color.FromArgb(200, 206, 214),
+            Txt(g, label, FBody, Color.FromArgb(200, 206, 214),
                 new RectangleF(box.Right + 10, box.Y - 3, 460, 26), false);
         }
 
