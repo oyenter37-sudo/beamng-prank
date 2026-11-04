@@ -45,11 +45,18 @@ namespace BeamPrank
         readonly Timer _tick;
 
         // loading / crash
+        const float BootLen = 5.2f;    // fake shader compile before the real loading frames
         float _loadT;
         float _holdT;
         bool _frozen;
         bool _dialogShown;
         bool _instantCrash;
+        CrashKind _crashKind;
+        readonly bool _modern = RunState.IsModernWindows;
+
+        // the game draws its own orange pointer; the system cursor stays hidden
+        PointF _mouse;
+        bool _mouseInside;
 
         Bitmap _buf;
         Graphics _bufG;
@@ -156,6 +163,7 @@ namespace BeamPrank
             KeyPreview = true;
             Icon = Assets.AppIcon;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
+            Cursor = Cursors.None;
 
             // a DIB section doubles as the GDI+ drawing surface and as the source
             // of a native blit; a plain Bitmap cannot be blitted by GDI, and
@@ -186,7 +194,7 @@ namespace BeamPrank
             // a maximized borderless window still leaves the taskbar visible;
             // the real game owns the whole screen
             Bounds = System.Windows.Forms.Screen.FromPoint(Cursor.Position).Bounds;
-            Cursor = Cursors.Default;
+            Cursor = Cursors.None;
         }
 
         // ------------------------------------------------------------------ loop
@@ -281,7 +289,7 @@ namespace BeamPrank
         {
             _loadT += dt;
             float animLen = Assets.FrameCount / 20f;
-            if (_loadT > animLen + 1.0f)
+            if (_loadT > BootLen + animLen + 1.2f)
                 TriggerCrash(false);
         }
 
@@ -292,6 +300,9 @@ namespace BeamPrank
             _frozen = true;
             _holdT = instant ? 0.45f : 0.9f;
             Cursor = Cursors.WaitCursor;
+
+            _crashKind = RunState.PickCrash(RunState.CurrentRun);
+            RunState.WriteCrashArtifacts(RunState.ReasonFor(_crashKind));
 
             Timer t = new Timer();
             t.Interval = (int)(_holdT * 1000);
@@ -309,9 +320,21 @@ namespace BeamPrank
         {
             if (_dialogShown) return;
             _dialogShown = true;
-            CrashForm f = new CrashForm();
+            CrashForm f = new CrashForm(_crashKind, _modern);
             f.Show(this);
             f.BringToFront();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Alt+F4 while loading is exactly how a real game dies mid-load
+            if (!_frozen && _screen == Screen.Loading && e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                TriggerCrash(true);
+                return;
+            }
+            base.OnFormClosing(e);
         }
 
         // ---------------------------------------------------------------- input
@@ -323,20 +346,28 @@ namespace BeamPrank
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            _mouse = ToVirtual(e.Location);
+            _mouseInside = true;
             if (_frozen) return;
-            PointF v = ToVirtual(e.Location);
-            string id = HitTest(v);
+            string id = HitTest(_mouse);
             if (id != _hoverId)
             {
                 _hoverId = id;
-                Cursor = IsClickable(id) ? Cursors.Hand : Cursors.Default;
                 _dirty = true;
             }
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            _mouse = ToVirtual(PointToClient(Cursor.Position));
+            _mouseInside = true;
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
+            _mouseInside = false;
             _hoverId = "";
             _dirty = true;
         }
@@ -457,6 +488,8 @@ namespace BeamPrank
                     using (SolidBrush b = new SolidBrush(Color.FromArgb((int)(_fade * 255), 0, 0, 0)))
                         g.FillRectangle(b, 0, 0, W, H);
                 }
+
+                DrawCursor(g);
             }
 
         }
@@ -727,11 +760,167 @@ namespace BeamPrank
         // --------------------------------------------------------------- loading
         void DrawLoading(Graphics g)
         {
+            if (_loadT < BootLen)
+            {
+                DrawShaderBoot(g);
+                return;
+            }
+
             g.DrawImage(Assets.Get("bg_loading.jpg"), 0, 0, W, H);
 
-            int frame = (int)(_loadT * 20f);
+            float t = _loadT - BootLen;
+            int frame = (int)(t * 20f);
             if (frame > Assets.FrameCount - 1) frame = Assets.FrameCount - 1;
             g.DrawImage(Assets.Frame(frame), new RectangleF(25, 398, 700, 294));
+
+            DrawLoadingCounters(g, t);
+        }
+
+        /// <summary>The first seconds of a real launch: compiling shaders on a black screen.</summary>
+        void DrawShaderBoot(Graphics g)
+        {
+            using (LinearGradientBrush bg = new LinearGradientBrush(new Rectangle(0, 0, W, H),
+                Color.FromArgb(9, 10, 12), Color.FromArgb(22, 24, 28), 90f))
+                g.FillRectangle(bg, 0, 0, W, H);
+
+            float raw = Clamp(_loadT / (BootLen - 1.1f), 0f, 1f);
+            float p = raw * raw * (3f - 2f * raw);
+
+            Draw.Slash(g, new RectangleF(140, 148, 22, 58));
+            Draw.Text(g, "BeamNG.drive", Theme.PageTitle, Color.White,
+                new RectangleF(186, 144, 700, 66), Draw.LeftMid);
+
+            int dots = ((int)(_loadT * 3f)) % 4;
+            Draw.Text(g, "Compiling shaders" + new string('.', dots), Theme.Section,
+                Color.FromArgb(226, 229, 233), new RectangleF(140, 258, 800, 40), Draw.LeftMid);
+
+            int pct = (int)(p * 100f);
+            Draw.Text(g, pct + " %", Theme.Section, Theme.Orange,
+                new RectangleF(1140, 258, 180, 40), Draw.RightMid);
+
+            RectangleF track = new RectangleF(140, 310, 1180, 5);
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(44, 48, 54)))
+                g.FillRectangle(b, track);
+            using (SolidBrush b = new SolidBrush(Theme.Orange))
+                g.FillRectangle(b, track.X, track.Y, track.Width * p, track.Height);
+
+            int variants = 512;
+            int done = (int)(p * variants);
+            string detail = p >= 0.999f
+                ? variants + " / " + variants + " variants · " + variants + " cached · 0 failed"
+                : done + " / " + variants + " variants · 0 cached · 1 worker";
+            Draw.Text(g, detail, Theme.Load, Color.FromArgb(126, 132, 140),
+                new RectangleF(140, 330, 1180, 28), Draw.LeftMid);
+
+            // scrolling compiler log
+            int shown = 7;
+            int last = (int)(p * BootLog.Length);
+            if (last > BootLog.Length - 1) last = BootLog.Length - 1;
+            int first = Math.Max(0, last - shown + 1);
+            for (int i = first; i <= last && i < BootLog.Length; i++)
+            {
+                int row = i - first;
+                bool current = i == last;
+                Color c = current ? Color.FromArgb(206, 211, 217) : Color.FromArgb(112, 118, 126);
+                string stamp = string.Format("00:00:{0:00}.{1:000}", i / 3, (i * 137) % 1000);
+                Draw.Text(g, stamp, Theme.Mono, Color.FromArgb(74, 79, 86),
+                    new RectangleF(140, 406 + row * 30, 120, 26), Draw.LeftMid);
+                Draw.Text(g, BootLog[i], Theme.Mono, c,
+                    new RectangleF(264, 406 + row * 30, 1050, 26), Draw.LeftMid);
+            }
+
+            Draw.Text(g, "BeamNG.drive 0.36.4.0 (build 18294)", Theme.Load,
+                Color.FromArgb(92, 98, 106), new RectangleF(140, 992, 700, 24), Draw.LeftMid);
+            Draw.Text(g, "Direct3D 11 · 1920 x 1080 · 60 Hz", Theme.Load,
+                Color.FromArgb(92, 98, 106), new RectangleF(1180, 992, 600, 24), Draw.RightMid);
+        }
+
+        static readonly string[] BootLog =
+        {
+            "INFO   ShaderDB: loading shader cache",
+            "INFO   ShaderDB: cache empty, full rebuild",
+            "INFO   D3D11: creating device on adapter 0",
+            "INFO   D3D11: feature level 11_1 selected",
+            "INFO   RT: shadow map 4096 x 4096",
+            "shaderc: terrain_standard       [1/512]",
+            "shaderc: terrain_standard      [16/512]",
+            "shaderc: terrain_standard      [32/512]",
+            "shaderc: vegetation_leaf       [64/512]",
+            "shaderc: water_surface         [96/512]",
+            "shaderc: vehicle_paint        [128/512]",
+            "WARN   shaderc: variant 0x8f31 compile took 4211 ms",
+            "shaderc: vehicle_glass        [192/512]",
+            "shaderc: road_asphalt         [224/512]",
+            "shaderc: sky_atmosphere       [256/512]",
+            "shaderc: terrain_standard     [320/512]",
+            "shaderc: vegetation_leaf      [384/512]",
+            "shaderc: vehicle_paint        [448/512]",
+            "shaderc: postfx_bloom         [480/512]",
+            "shaderc: postfx_tonemap       [504/512]",
+            "shaderc: postfx_taa           [512/512]",
+            "INFO   ShaderDB: 512 variants compiled",
+            "INFO   ShaderDB: writing cache (41.2 MB)",
+            "INFO   Render: shaders ready, 0 failed"
+        };
+
+        /// <summary>Live status lines under the baked loading text, so they actually tick.</summary>
+        void DrawLoadingCounters(Graphics g, float t)
+        {
+            float animLen = Assets.FrameCount / 20f;
+            float p = Clamp(t / animLen, 0f, 1f);
+            int textures = (int)(1284 * p);
+            int beams = (int)(388 * Math.Min(1f, p * 1.35f));
+            int materials = (int)(2210 * p);
+
+            Draw.TextShadow(g, "Streaming: " + textures + " / 1284 textures", Theme.Load,
+                Color.FromArgb(204, 209, 214), new RectangleF(60, 700, 780, 24), Draw.LeftMid);
+            Draw.TextShadow(g, "Physics: " + beams + " / 388 beams  ·  " + materials + " materials",
+                Theme.Load, Color.FromArgb(204, 209, 214), new RectangleF(60, 726, 780, 24), Draw.LeftMid);
+        }
+
+        /// <summary>BeamNG-flavoured orange pointer, drawn at the virtual mouse position.</summary>
+        void DrawCursor(Graphics g)
+        {
+            if (!_mouseInside || _frozen || _screen == Screen.Loading) return;
+
+            float s = 1.55f;
+            PointF[] pts =
+            {
+                new PointF(0f, 0f),
+                new PointF(0f, 18f * s),
+                new PointF(4.4f * s, 13.6f * s),
+                new PointF(7.6f * s, 20f * s),
+                new PointF(10.8f * s, 18.5f * s),
+                new PointF(7.7f * s, 12.2f * s),
+                new PointF(13.4f * s, 12.2f * s)
+            };
+
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                path.AddPolygon(pts);
+                using (Matrix m = new Matrix())
+                {
+                    m.Translate(_mouse.X, _mouse.Y);
+                    path.Transform(m);
+                }
+
+                using (GraphicsPath shadow = (GraphicsPath)path.Clone())
+                using (Matrix sm = new Matrix())
+                {
+                    sm.Translate(2.2f, 2.2f);
+                    shadow.Transform(sm);
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(90, 0, 0, 0)))
+                        g.FillPath(b, shadow);
+                }
+
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(242, 116, 28)))
+                    g.FillPath(b, path);
+                using (Pen pen = new Pen(Color.FromArgb(255, 255, 255), 1.6f))
+                {
+                    pen.LineJoin = LineJoin.Round;
+                    g.DrawPath(pen, path);
+                }
+            }
         }
 
         // ------------------------------------------------------------------ page
@@ -800,6 +989,7 @@ namespace BeamPrank
         internal void TestScreen(Screen s) { _screen = s; _fade = 0f; _fadeDir = 0; EnterScreen(); }
         internal void TestHover(string id) { _hoverId = id; if (id != "") _hoverAnim[id] = 1f; }
         internal void TestLoading(float t) { _loadT = t; }
+        internal void TestCursor(float x, float y) { _mouse = new PointF(x, y); _mouseInside = true; }
         internal void TestMapScroll(float v) { _mapsScroll = _mapsTarget = v; }
         internal void TestVehScroll(float v) { _vehScroll = _vehTarget = v; }
         internal void TestSelect(int map, int veh) { _mapSel = map; _vehSel = veh; }

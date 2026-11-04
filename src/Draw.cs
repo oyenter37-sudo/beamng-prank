@@ -23,6 +23,8 @@ namespace BeamPrank
         public static readonly Font NameTiny = Fonts.Get("Segoe UI", 14f, FontStyle.Bold);
         public static readonly Font Dialog = Fonts.Get("Segoe UI", 12f, FontStyle.Regular);
         public static readonly Font DialogBold = Fonts.Get("Segoe UI", 12f, FontStyle.Bold);
+        public static readonly Font Load = Fonts.Get("Segoe UI", 15f, FontStyle.Regular);
+        public static readonly Font Mono = Fonts.Get("Consolas", 15f, FontStyle.Regular);
     }
 
     static class Fonts

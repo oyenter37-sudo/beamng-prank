@@ -54,22 +54,31 @@ namespace BeamPrank
                 Shot(f, "05-vehicle-scrolled");
 
                 f.TestScreen(AppForm.Screen.Loading);
-                foreach (float t in new float[] { 0f, 1.2f, 2.4f, 3.9f })
+                foreach (float t in new float[] { 0.9f, 2.6f, 4.0f })
                 {
                     f.TestLoading(t);
-                    Shot(f, string.Format("06-loading-{0:0.0}", t));
+                    Shot(f, string.Format("06-boot-{0:0.0}", t));
+                }
+                foreach (float t in new float[] { 6.4f, 7.6f, 8.9f })
+                {
+                    f.TestLoading(t);
+                    Shot(f, string.Format("07-loading-{0:0.0}", t));
                 }
 
                 f.TestScreen(AppForm.Screen.Page);
                 f.TestPage("options");
-                Shot(f, "07-page-options");
+                Shot(f, "08-page-options");
 
                 f.TestPage("credits");
-                Shot(f, "08-page-credits");
+                Shot(f, "09-page-credits");
 
                 f.TestScreen(AppForm.Screen.Main);
                 f.TestHover("more");
-                Shot(f, "09-main-more-hover");
+                Shot(f, "10-main-more-hover");
+
+                f.TestHover("freeroam");
+                f.TestCursor(1420, 640);
+                Shot(f, "11-main-cursor");
             }
 
             Perf("main menu", f => { f.TestScreen(AppForm.Screen.Main); f.TestHover("freeroam"); });
@@ -77,13 +86,13 @@ namespace BeamPrank
             Perf("vehicles", f => { f.TestScreen(AppForm.Screen.Vehicles); f.TestHover("veh:2"); });
             PresentCheck();
 
-            using (CrashForm c = new CrashForm())
-            {
-                c.TestTime(4.0f);
-                Bitmap b = c.Shot();
-                Save(b, "10-crash-dialog");
-                b.Dispose();
-            }
+            CrashShot(CrashKind.StoppedWorking, false, 4.0f, "12-crash-classic");
+            CrashShot(CrashKind.StoppedWorking, true, 4.0f, "13-crash-stopped");
+            CrashShot(CrashKind.NotResponding, true, 0.5f, "14-crash-not-responding");
+            CrashShot(CrashKind.StartupError, true, 0.5f, "15-crash-startup-error");
+            CrashShot(CrashKind.DisplayDriver, false, 0.5f, "16-crash-display-driver");
+
+            CrashArtifacts();
 
             Out("---------------------------------------------");
             Out(string.Format("{0} rendered, {1} failed", _ok, _fail));
@@ -101,6 +110,7 @@ namespace BeamPrank
                 {
                     f.TestScreen(AppForm.Screen.Main);
                     f.TestHover("freeroam");
+                    f.TestCursor(1420, 640);
 
                     using (Bitmap shot = new Bitmap(960, 540))
                     {
@@ -110,7 +120,7 @@ namespace BeamPrank
                             Out("FAIL present: StretchBlt returned false");
                             return;
                         }
-                        Save(shot, "11-present");
+                        Save(shot, "17-present");
 
                         using (Bitmap refb = new Bitmap(960, 540))
                         {
@@ -146,6 +156,51 @@ namespace BeamPrank
             }
         }
 
+        static void CrashShot(CrashKind kind, bool modern, float t, string name)
+        {
+            try
+            {
+                using (CrashForm c = new CrashForm(kind, modern))
+                {
+                    c.TestTime(t);
+                    using (Bitmap b = c.Shot())
+                        Save(b, name, 2500);
+                }
+            }
+            catch (Exception ex)
+            {
+                _fail++;
+                Out("FAIL " + name + ": " + ex.GetType().Name + " " + ex.Message);
+            }
+        }
+
+        /// <summary>The prank must leave a log and a minidump behind, not just a dialog.</summary>
+        static void CrashArtifacts()
+        {
+            try
+            {
+                string dir = RunState.WriteCrashArtifacts("self-test crash");
+                string log = Path.Combine(dir, "beamng.log");
+                string dump = Path.Combine(dir, "beamng_dump.dmp");
+                string info = Path.Combine(dir, "crash-info.txt");
+
+                if (!File.Exists(log) || new FileInfo(log).Length < 1000 ||
+                    !File.Exists(dump) || new FileInfo(dump).Length != 196608 ||
+                    !File.Exists(info))
+                {
+                    _fail++;
+                    Out("FAIL crash artifacts: log/dump/info missing or truncated");
+                    return;
+                }
+                Out("  ok  crash artifacts        beamng.log, beamng_dump.dmp, crash-info.txt");
+            }
+            catch (Exception ex)
+            {
+                _fail++;
+                Out("FAIL crash artifacts: " + ex.GetType().Name + " " + ex.Message);
+            }
+        }
+
         static void Perf(string label, Action<AppForm> setup)
         {
             using (AppForm f = new AppForm())
@@ -176,12 +231,14 @@ namespace BeamPrank
             }
         }
 
-        static void Save(Bitmap b, string name)
+        static void Save(Bitmap b, string name) { Save(b, name, 8000); }
+
+        static void Save(Bitmap b, string name, int minBytes)
         {
             string path = Path.Combine(_dir, name + ".png");
             b.Save(path, ImageFormat.Png);
             FileInfo fi = new FileInfo(path);
-            if (fi.Length < 8000)
+            if (fi.Length < minBytes)
             {
                 _fail++;
                 Out(string.Format("FAIL {0}: only {1} bytes", name, fi.Length));

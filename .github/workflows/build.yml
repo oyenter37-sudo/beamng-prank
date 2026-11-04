@@ -14,8 +14,11 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build
+      - name: Build game
         run: msbuild src\BeamPrank.csproj /restore /p:Configuration=Release /p:Platform=AnyCPU /v:minimal
+
+      - name: Build installer
+        run: msbuild src\Installer\BeamSetup.csproj /restore /p:Configuration=Release /p:Platform=AnyCPU /v:minimal
 
       - name: Render screens (self-test)
         shell: pwsh
@@ -25,6 +28,18 @@ jobs:
           Write-Host "self-test exit code: $($p.ExitCode)"
           if (Test-Path shots\_report.txt) { Get-Content shots\_report.txt }
           if ($p.ExitCode -ne 0) { throw "self-test failed with exit code $($p.ExitCode)" }
+
+      - name: Render installer shots
+        shell: pwsh
+        run: |
+          $setup = "src\Installer\bin\Release\BeamNG.drive_Setup.exe"
+          $p = Start-Process -FilePath $setup -ArgumentList '--shot','shots' -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "installer shot failed with exit code $($p.ExitCode)" }
+          foreach ($n in '18-installer-welcome','19-installer-working','20-installer-done') {
+            $f = "shots\$n.png"
+            if (-not (Test-Path $f)) { throw "missing $f" }
+            if ((Get-Item $f).Length -lt 8000) { throw "$f is suspiciously small" }
+          }
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -40,6 +55,7 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item src\bin\Release\BeamNG.drive.exe dist\
           Copy-Item src\bin\Release\*.config dist\ -ErrorAction SilentlyContinue
+          Copy-Item src\Installer\bin\Release\BeamNG.drive_Setup.exe dist\
           Get-ChildItem dist | Select-Object Name,Length
           Compress-Archive -Path dist\* -DestinationPath BeamNG-drive-win.zip -Force
 
