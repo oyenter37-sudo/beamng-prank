@@ -321,6 +321,9 @@ namespace BeamPrank
             Cursor = Cursors.WaitCursor;
 
             _crashKind = RunState.PickCrash(RunState.CurrentRun);
+            // "is not responding" is a Windows 10/11 dialog; 7 and 8 get the driver message instead
+            if (!_modern && _crashKind == CrashKind.NotResponding)
+                _crashKind = CrashKind.DisplayDriver;
             RunState.WriteCrashArtifacts(RunState.ReasonFor(_crashKind));
 
             Timer t = new Timer();
