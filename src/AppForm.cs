@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -52,6 +53,33 @@ namespace BeamPrank
 
         Bitmap _buf;
         Graphics _bufG;
+        IntPtr _memDc, _dib;
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct BitmapInfoHeader
+        {
+            public int Size, Width, Height;
+            public short Planes, BitCount;
+            public int Compression, SizeImage, XPels, YPels, ClrUsed, ClrImportant;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        struct BitmapInfo
+        {
+            public BitmapInfoHeader Header;
+            public int Colors;
+        }
+
+        [DllImport("gdi32.dll")]
+        static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+        [DllImport("gdi32.dll")]
+        static extern IntPtr CreateDIBSection(IntPtr hdc, ref BitmapInfo bmi, uint usage,
+            out IntPtr bits, IntPtr section, uint offset);
+        [DllImport("gdi32.dll")]
+        static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);
+        [DllImport("gdi32.dll")]
+        static extern bool DeleteObject(IntPtr obj);
+        [DllImport("gdi32.dll")]
+        static extern bool DeleteDC(IntPtr hdc);
 
         [DllImport("gdi32.dll")]
         static extern bool BitBlt(IntPtr d, int x, int y, int w, int h,
@@ -129,7 +157,22 @@ namespace BeamPrank
             Icon = Assets.AppIcon;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
 
-            _buf = new Bitmap(W, H);
+            // a DIB section doubles as the GDI+ drawing surface and as the source
+            // of a native blit; a plain Bitmap cannot be blitted by GDI, and
+            // DrawImage is far too slow to rescale every frame
+            BitmapInfo bmi = new BitmapInfo();
+            bmi.Header.Size = Marshal.SizeOf(typeof(BitmapInfoHeader));
+            bmi.Header.Width = W;
+            bmi.Header.Height = -H;            // top-down, same as GDI+
+            bmi.Header.Planes = 1;
+            bmi.Header.BitCount = 32;
+            bmi.Header.Compression = 0;        // BI_RGB
+
+            IntPtr bits;
+            _memDc = CreateCompatibleDC(IntPtr.Zero);
+            _dib = CreateDIBSection(_memDc, ref bmi, 0, out bits, IntPtr.Zero, 0);
+            SelectObject(_memDc, _dib);
+            _buf = new Bitmap(W, H, W * 4, PixelFormat.Format32bppRgb, bits);
             _bufG = Graphics.FromImage(_buf);
             _tick = new Timer();
             _tick.Interval = 16;
@@ -441,18 +484,17 @@ namespace BeamPrank
 
         bool Present(Graphics dstG, int x, int y, int w, int h)
         {
+            _bufG.Flush(FlushIntention.Sync);
             IntPtr dst = dstG.GetHdc();
-            IntPtr src = _bufG.GetHdc();
             try
             {
                 if (w == W && h == H)
-                    return BitBlt(dst, x, y, w, h, src, 0, 0, SRCCOPY);
+                    return BitBlt(dst, x, y, w, h, _memDc, 0, 0, SRCCOPY);
                 SetStretchBltMode(dst, HALFTONE);
-                return StretchBlt(dst, x, y, w, h, src, 0, 0, W, H, SRCCOPY);
+                return StretchBlt(dst, x, y, w, h, _memDc, 0, 0, W, H, SRCCOPY);
             }
             finally
             {
-                _bufG.ReleaseHdc(src);
                 dstG.ReleaseHdc(dst);
             }
         }
@@ -801,6 +843,8 @@ namespace BeamPrank
                 _tick.Dispose();
                 if (_bufG != null) _bufG.Dispose();
                 if (_buf != null) _buf.Dispose();
+                if (_dib != IntPtr.Zero) { DeleteObject(_dib); _dib = IntPtr.Zero; }
+                if (_memDc != IntPtr.Zero) { DeleteDC(_memDc); _memDc = IntPtr.Zero; }
             }
             base.Dispose(disposing);
         }
