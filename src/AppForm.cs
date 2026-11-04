@@ -150,7 +150,7 @@ namespace BeamPrank
         {
             Text = "BeamNG.drive";
             FormBorderStyle = FormBorderStyle.None;
-            WindowState = FormWindowState.Maximized;
+            WindowState = FormWindowState.Normal;
             BackColor = Color.Black;
             DoubleBuffered = false;
             KeyPreview = true;
@@ -183,6 +183,9 @@ namespace BeamPrank
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            // a maximized borderless window still leaves the taskbar visible;
+            // the real game owns the whole screen
+            Bounds = Screen.FromPoint(Cursor.Position).Bounds;
             Cursor = Cursors.Default;
         }
 
@@ -296,6 +299,7 @@ namespace BeamPrank
             {
                 t.Stop();
                 t.Dispose();
+                try { System.Media.SystemSounds.Hand.Play(); } catch { }
                 ShowCrash();
             };
             t.Start();
