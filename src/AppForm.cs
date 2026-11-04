@@ -399,7 +399,7 @@ namespace BeamPrank
             DrawButtonHit(g, "options", BtnOptions);
             DrawButtonHit(g, "quit", BtnQuit);
 
-            DrawUserName(g);
+            DrawUserName(g, 1042f);
         }
 
         void DrawButtonHit(Graphics g, string id, RectangleF r)
@@ -455,7 +455,7 @@ namespace BeamPrank
 
                 bool sel = i == _mapSel;
                 if (sel) DrawLabelTint(g, r, 34, 200);
-                Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("map:" + i));
+                Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("map:" + i), sel ? 0f : 0.85f);
                 _hits.Add(new Hit("map:" + i, r));
             }
 
@@ -475,7 +475,7 @@ namespace BeamPrank
 
             _hits.Add(new Hit("maps_back", MapsBack));
 
-            DrawUserName(g);
+            DrawUserName(g, 1058f);
         }
 
         static void DrawLabelTint(Graphics g, RectangleF card, float labelH, int alpha)
@@ -559,7 +559,7 @@ namespace BeamPrank
 
             bool sel = id == _vehSel;
             if (sel) DrawLabelTint(g, r, 40, 200);
-            Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("veh:" + id));
+            Draw.HoverOutline(g, r, 4f, sel ? 1f : Hover("veh:" + id), sel ? 0f : 0.85f);
             _hits.Add(new Hit("veh:" + id, r));
         }
 
@@ -667,11 +667,11 @@ namespace BeamPrank
             return s.Substring(0, 1);
         }
 
-        void DrawUserName(Graphics g)
+        void DrawUserName(Graphics g, float centerY)
         {
             string n = FitName(g, Theme.Name, UserName, 118);
             Draw.TextShadow(g, n, Theme.Name, Color.White,
-                new RectangleF(70, 1027, 122, 30), Draw.LeftMid);
+                new RectangleF(68, centerY - 15, 124, 30), Draw.LeftMid);
         }
 
         static float Clamp(float v, float a, float b)

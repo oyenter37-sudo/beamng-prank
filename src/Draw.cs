@@ -90,14 +90,15 @@ namespace BeamPrank
         }
 
         /// <summary>BeamNG-style hover: bright outline plus a soft interior lift.</summary>
-        public static void HoverOutline(Graphics g, RectangleF r, float rad, float strength)
+        public static void HoverOutline(Graphics g, RectangleF r, float rad, float strength, float veilScale = 1f)
         {
             if (strength <= 0.01f) return;
 
             int a = (int)(255 * strength);
             using (GraphicsPath p = Round(r, rad))
             {
-                using (SolidBrush b = new SolidBrush(Color.FromArgb((int)(70 * strength), 255, 255, 255)))
+                int veil = (int)(60 * strength * veilScale);
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(veil, 255, 255, 255)))
                     g.FillPath(b, p);
                 using (Pen pen = new Pen(Color.FromArgb(a, Theme.Orange), 3f))
                 {

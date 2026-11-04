@@ -31,6 +31,7 @@ jobs:
         with:
           name: render-shots
           path: shots/
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Package
@@ -46,4 +47,5 @@ jobs:
         with:
           name: BeamNG-drive-win
           path: BeamNG-drive-win.zip
+          retention-days: 30
           if-no-files-found: error
