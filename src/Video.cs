@@ -135,18 +135,18 @@ namespace BeamPrank
         // ------------------------------------------------------------------ maps
         void RenderMaps(float t)
         {
-            if (t > 3.42f) _app.TestSelect(3, -1);
-
-            _app.TestHoverLevel("map:3", Ramp(t, 2.90f, 3.28f));
+            // hover a real card (slot 6, Derby Arenas); the selected default map
+            // stays Grid, Small, Pure so the baked info panel still matches
+            _app.TestHoverLevel("map:6", Ramp(t, 2.90f, 3.28f));
             _app.TestHoverLevel("maps_start", Ramp(t, 3.95f, 4.30f));
 
             PointF m;
-            if (t < 3.42f)
-                m = Between(new PointF(960f, 540f), new PointF(1322f, 216f),
-                    Ease(Ramp(t, FadeMain, 3.30f)));
+            if (t < 3.45f)
+                m = Between(new PointF(960f, 540f), new PointF(944f, 447f),
+                    Ease(Ramp(t, FadeMain, 3.35f)));
             else
-                m = Between(new PointF(1322f, 216f), new PointF(1300f, 1006f),
-                    Ease(Ramp(t, 3.42f, 4.32f)));
+                m = Between(new PointF(944f, 447f), new PointF(1300f, 1006f),
+                    Ease(Ramp(t, 3.45f, 4.32f)));
             _app.TestCursor(m.X, m.Y);
 
             float fade = 1f - Ramp(t, FadeMain, FadeMain + 0.32f);
